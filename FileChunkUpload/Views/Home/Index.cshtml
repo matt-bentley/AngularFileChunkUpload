@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<div id="upload-panel">
+    <h1>AngularJS File Upload</h1>
+    <input type="file" id="uploadFile" name="file" />
+    <md-button class="md-raised md-primary" ng-click="uploadFile()">Upload</md-button>
+    <div>
+        <h3>Upload Information:</h3>
+        <div>
+            <span>File Size: {{fileSize}}MB</span>
+        </div>
+        <span>{{loadingInfo}}</span>
+        <md-progress-linear ng-show="loadingInfo" class="md-accent" md-mode="determinate" ng-value="loadingPercent" style="width: 400px;margin-top: 12px;"></md-progress-linear>
+    </div>
+</div>
