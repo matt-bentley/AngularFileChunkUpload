@@ -1,3 +1,25 @@
 ﻿#upload-panel {
     padding: 20px;
 }
+
+#file-drop {
+    width: 404px;
+    height: 75px;
+    background: rgba(148, 98, 204, 0.15);
+    border-radius: 2px;
+    border: solid 1px #d8d6d6;
+    margin-bottom: 5px;
+}
+
+.file-drop-over {
+    background: rgba(148, 98, 204, 0.08) !important;
+    border: solid 2px #c1bfbf!important;
+}
+
+#file-drop > .drop-text {
+    margin-top: 30px;
+    margin-left: 124px;
+    font-size: 14px;
+    font-style: italic;
+    color: #525151;
+}

@@ -1,14 +1,69 @@
-﻿var app = angular.module('plunker', ['ngMaterial', 'ngMessages']);
+﻿var app = angular.module('plunker', ['ngMaterial', 'ngMessages', 'angularFileUpload']);
 
-app.controller('MainCtrl', function ($scope, $timeout, $http) {
+app.controller('MainCtrl', function ($scope, $timeout, $http, FileUploader, $mdToast) {
 
     $scope.loadingInfo = "";
+    var uploader = $scope.uploader = new FileUploader();
+    var last = {
+        bottom: false,
+        top: true,
+        left: false,
+        right: true
+    };
+
+    $scope.toastPosition = angular.extend({}, last);
+    $scope.getToastPosition = function () {
+        sanitizePosition();
+
+        return Object.keys($scope.toastPosition)
+            .filter(function (pos) { return $scope.toastPosition[pos]; })
+            .join(' ');
+    };
+    function sanitizePosition() {
+        var current = $scope.toastPosition;
+
+        if (current.bottom && last.top) current.top = false;
+        if (current.top && last.bottom) current.bottom = false;
+        if (current.right && last.left) current.left = false;
+        if (current.left && last.right) current.right = false;
+
+        last = angular.extend({}, current);
+    }
+    $scope.showSimpleToast = function (text) {
+        var pinTo = $scope.getToastPosition();
+
+        $mdToast.show(
+            $mdToast.simple()
+                .textContent(text)
+                .position(pinTo)
+                .hideDelay(3000)
+        );
+    };
+
+    // a sync filter
+    uploader.filters.push({
+        name: 'maxCountFilter',
+        fn: function (item /*{File|FileLikeObject}*/, options) {
+            // limit to 1 item
+            this.queue = [];
+            return this.queue.length < 1;
+        }
+    });
+
+    $scope.selectFile = function () {
+        var fileUploadElem = document.getElementById("uploadFile");
+        fileUploadElem.click();
+    }
 
     $scope.uploadFile = function () {
+        var fileUploadElem = document.getElementById("uploadFile");
+        if (fileUploadElem.files.length < 1 && uploader.queue.length < 1){
+            $scope.showSimpleToast('Please select a file to upload');
+            return;
+        }
         $scope.loadingInfo = "Starting upload...";
         $scope.loadingPercent = 0;
-        var fileUploadElem = document.getElementById("uploadFile");
-        var file = fileUploadElem.files[0];
+        var file = fileUploadElem.files.length < 1 ? uploader.queue[0]._file : fileUploadElem.files[0];
         $scope.fileSize = Math.round(file.size / 1000000);
         //UploadFileChunk(file, file.name);
         UploadFile(file);

@@ -3,13 +3,24 @@
 }
 <div id="upload-panel">
     <h1>AngularJS File Upload</h1>
-    <input type="file" id="uploadFile" name="file" />
+    <div nv-file-drop="" uploader="uploader">
+        <div id="file-drop" nv-file-over="" uploader="uploader" over-class="file-drop-over" class="well my-drop-zone">
+           <div class="drop-text">
+               Drag and Drop files here
+           </div> 
+        </div>
+    </div>
+    @*<div id="file-drop" nv-file-over="" uploader="uploader" over-class="file-drop-over"></div>*@
+    <input type="file" id="uploadFile" nv-file-select="" uploader="uploader" name="file" ng-show="false"/>
+    <md-button class="md-raised md-accent" ng-click="selectFile()">Select File</md-button>
     <md-button class="md-raised md-primary" ng-click="uploadFile()">Upload</md-button>
     <div>
         <h3>Upload Information:</h3>
-        <div>
-            <span>File Size: {{fileSize}}MB</span>
-        </div>
+        <ul>
+            <li ng-repeat="item in uploader.queue">
+                <span ng-bind="item.file.name"></span><span> - {{item.file.size/1000000}}MB</span><br />
+            </li>
+        </ul>
         <span>{{loadingInfo}}</span>
         <md-progress-linear ng-show="loadingInfo" class="md-accent" md-mode="determinate" ng-value="loadingPercent" style="width: 400px;margin-top: 12px;"></md-progress-linear>
     </div>
