@@ -1,6 +1,7 @@
 ﻿using FileChunkUpload.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +13,13 @@ namespace FileChunkUpload.Controllers
     [Route("api/[controller]")]
     public class FilesController : Controller
     {
+        private IMemoryCache _cache;
+
+        public FilesController(IMemoryCache memoryCache)
+        {
+            _cache = memoryCache;
+        }
+
         [HttpPost("UploadChunk")]
         public IActionResult UploadChunk(IFormFile fileBase)
         {
@@ -120,6 +128,116 @@ namespace FileChunkUpload.Controllers
                 //}
             }
             return rslt;
+        }
+
+        [HttpPost("UploadCachedChunk")]
+        public IActionResult UploadCachedChunk(IFormFile fileBase)
+        {
+            foreach (var file in Request.Form.Files)
+            {
+                if (file != null && file.Length > 0)
+                {
+                    try
+                    {
+                        // take the input stream, and save it to a temp folder using  
+                        // the original file.part name posted  
+                        var stream = file.OpenReadStream();
+                        var fileName = Path.GetFileName(file.FileName);
+
+                        var chunk = StreamToArray(stream);
+
+                        // Set cache options.
+                        var cacheEntryOptions = new MemoryCacheEntryOptions()
+                            // Keep in cache for this time, reset time if accessed.
+                            .SetSlidingExpiration(TimeSpan.FromSeconds(120));
+
+                        // Save data in cache.
+                        _cache.Set(fileName, chunk, cacheEntryOptions);
+                        MergeCachedFile(fileName);
+                    }
+                    catch (Exception ex)
+                    {
+
+                        throw;
+                    }                
+                }
+            }
+            return Ok();
+        }
+
+        private bool MergeCachedFile(string FileName)
+        {
+            bool rslt = false;
+            // parse out the different tokens from the filename according to the convention
+            string partToken = ".part_";
+
+            string baseFileName = FileName.Substring(0, FileName.IndexOf(partToken));
+            string trailingTokens = FileName.Substring(FileName.IndexOf(partToken) + partToken.Length);
+
+            int fileIndex = 0;
+            int fileCount = 0;
+            int.TryParse(trailingTokens.Substring(0, trailingTokens.IndexOf(".")), out fileIndex);
+            int.TryParse(trailingTokens.Substring(trailingTokens.IndexOf(".") + 1), out fileCount);
+
+            if (fileIndex == fileCount)
+            {             
+                // add each file located to a list so we can get them into
+                // the correct order for rebuilding the file
+                List<SortedFile> mergeList = new List<SortedFile>();
+                for(int i = 1; i <= fileCount; i++)
+                {
+                    string chunkName = $"{baseFileName}{partToken}{i}.{fileCount}";
+                    byte[] chunk;
+                    if (_cache.TryGetValue(chunkName, out chunk))
+                    {
+                        SortedFile sortedChunk = new SortedFile()
+                        {
+                            FileName = chunkName,
+                            FileOrder = i,
+                            Bytes = chunk
+                        };
+                        mergeList.Add(sortedChunk);
+                    }
+                    else
+                    {
+                        // coulnd't find the cached chunk
+                        throw new FileNotFoundException();
+                    }
+                }
+
+                string uploadPath = $"App_Data\\uploads\\{baseFileName}";
+                using (FileStream stream = new FileStream(uploadPath, FileMode.Create))
+                {
+                    // merge each file chunk back into one contiguous file stream
+                    foreach (var chunk in mergeList)
+                    {
+                        try
+                        {
+                            stream.Write(chunk.Bytes, 0, chunk.Bytes.Length);
+                            _cache.Remove(chunk.FileName);
+                        }
+                        catch (IOException ex)
+                        {
+                            // handle
+                        }
+                    }
+                }
+                rslt = true;
+                // unlock the file from singleton
+                //MergeFileManager.Instance.RemoveFile(baseFileName);
+                //}
+            }
+            return rslt;
+        }
+
+        public static byte[] StreamToArray(Stream input)
+        {
+            byte[] buffer = new byte[16 * 1024];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                input.CopyTo(ms);
+                return ms.ToArray();
+            }
         }
     }
 }

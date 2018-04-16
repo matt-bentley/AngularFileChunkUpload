@@ -9,5 +9,6 @@ namespace FileChunkUpload.Models
     {
         public string FileName { get; set; }
         public int FileOrder { get; set; }
+        public byte[] Bytes { get; set; }
     }
 }

@@ -18,7 +18,7 @@
         <h3>Upload Information:</h3>
         <ul>
             <li ng-repeat="item in uploader.queue">
-                <span ng-bind="item.file.name"></span><span> - {{item.file.size/1000000}}MB</span><br />
+                <span ng-bind="item.file.name"></span><span> - {{item.file.size/1000000 | number:2}}MB</span><br />
             </li>
         </ul>
         <span>{{loadingInfo}}</span>

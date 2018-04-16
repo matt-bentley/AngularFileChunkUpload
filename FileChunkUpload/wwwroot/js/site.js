@@ -126,7 +126,8 @@ app.controller('MainCtrl', function ($scope, $timeout, $http, FileUploader, $mdT
         data.append('file', chunks[i], chunkName);
 
         $.ajax({
-            url: "api/Files/UploadChunk",
+            //url: "api/Files/UploadChunk",
+            url: "api/Files/UploadCachedChunk",
             type: 'POST',
             data: data,
             processData: false,  // tell jQuery not to process the data
